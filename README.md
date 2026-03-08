@@ -51,6 +51,56 @@ node generate-schemas.js openapi.json schemas
 
 This will process `openapi.json` and place the generated schema files into the `schemas/` directory.
 
+### Server-Side Integration
+
+The core logic for generating schemas is modularized and exported as an `async function generate(spec)` from `generate-schemas.js`. This allows you to integrate the schema generation directly into your server-side Node.js applications, especially if you're looking to expose language server-compatible JSON schema endpoints dynamically.
+
+You can import and use the `generate` function like this:
+
+```javascript
+import { generate } from './generate-schemas.js';
+import express from 'express';
+import swaggerUi from 'swagger-ui-express'; // Example: if serving Swagger UI
+
+// Assuming you have your OpenAPI spec loaded
+const openApiSpec = { /* Your OpenAPI Specification Object */ };
+
+const app = express();
+
+// Serve your OpenAPI documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
+
+// Expose a custom endpoint for schemas
+app.get('/schemas/:schemaName?', async (req, res) => {
+  try {
+    const allSchemas = await generate(openApiSpec);
+    const schemaName = req.params.schemaName;
+
+    if (schemaName) {
+      if (allSchemas[schemaName]) {
+        res.json(allSchemas[schemaName]);
+      } else {
+        res.status(404).json({ error: 'Schema not found' });
+      }
+    } else {
+      res.json(allSchemas); // Return all schemas if no specific one is requested
+    }
+  } catch (error) {
+    console.error('Error generating schemas:', error);
+    res.status(500).json({ error: 'Failed to generate schemas' });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`API Docs available at http://localhost:${PORT}/api-docs`);
+  console.log(`Schemas available at http://localhost:${PORT}/schemas`);
+});
+```
+
+This setup allows any client (including IDEs or language servers) to fetch a specific schema (e.g., `/schemas/UserRequest.schema.json`) or all schemas (e.g., `/schemas`) directly from your running application.
+
 ## Generated File Naming Convention
 
 Each generated schema file follows the format:
