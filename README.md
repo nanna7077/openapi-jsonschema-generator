@@ -13,26 +13,22 @@ This tool converts an OpenAPI specification file into standalone JSON Schema fil
 
 ## Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/nanna7077/openapi-jsonschema-generator.git
-    cd openapi-jsonschema-generator
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
+Install the package from npm:
+
+```bash
+npm install -g openapi-langserver-schemas
+```
 
 ## Usage
 
-The script can be executed using Node.js.
+The script can be executed from the command line.
 
 **Basic Usage**:
 
 This command will generate schemas in a `schemas/` directory by default.
 
 ```bash
-node generate-schemas.js <path/to/your/openapi.json>
+openapi-langserver-schemas <path/to/your/openapi.json>
 ```
 
 **Specifying Output Directory**:
@@ -40,13 +36,13 @@ node generate-schemas.js <path/to/your/openapi.json>
 You can provide a custom output directory as the second argument.
 
 ```bash
-node generate-schemas.js <path/to/your/openapi.json> <path/to/your/output/directory>
+openapi-langserver-schemas <path/to/your/openapi.json> <path/to/your/output/directory>
 ```
 
 **Example**:
 
 ```bash
-node generate-schemas.js openapi.json schemas
+openapi-langserver-schemas openapi.json schemas
 ```
 
 This will process `openapi.json` and place the generated schema files into the `schemas/` directory.

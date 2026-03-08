@@ -232,7 +232,7 @@
         </script>
 
         <script type="module">
-            import { generate } from "./generate-schemas.js";
+            import { generateOpenApiSchemas } from "./generate-schemas.js";
 
             const dropzoneFile = document.getElementById("dropzone-file");
             const fileNameDisplay = document.getElementById("fileNameDisplay");
@@ -272,7 +272,7 @@
 
                     if (openAPISpec) {
                         try {
-                            const schemas = await generate(openAPISpec);
+                            const schemas = await generateOpenApiSchemas(openAPISpec);
                             displaySchemas(schemas);
                         } catch (error) {
                             errorMessage.textContent = `Error generating schemas: ${error.message}`;

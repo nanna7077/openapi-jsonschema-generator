@@ -1,6 +1,6 @@
 import SwaggerParser from "@apidevtools/swagger-parser";
 
-export async function generate(spec) {
+export async function generateOpenApiSchemas(spec) {
     const schemas = {};
 
     const generateOperationId = (method, path) => {
