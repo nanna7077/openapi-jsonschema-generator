@@ -13,10 +13,18 @@ This tool converts an OpenAPI specification file into standalone JSON Schema fil
 
 ## Installation
 
-Install the package from npm:
+Install the package from the GitHub npm registry.
+
+First, you will need to configure npm to use the GitHub registry for the `@nanna7077` scope. Create or edit the `.npmrc` file in your home directory or the root of your project and add the following line:
+
+```
+@nanna7077:registry=https://npm.pkg.github.com/
+```
+
+Now, you can install the package:
 
 ```bash
-npm install -g openapi-langserver-schemas
+npm install -g @nanna7077/openapi-langserver-schemas
 ```
 
 ## Usage
@@ -54,7 +62,7 @@ The core logic for generating schemas is modularized and exported as an `async f
 You can import and use the `generateOpenApiSchemas` function like this:
 
 ```javascript
-import { generateOpenApiSchemas } from 'openapi-langserver-schemas';
+import { generateOpenApiSchemas } from '@nanna7077/openapi-langserver-schemas';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express'; // Example: if serving Swagger UI
 
@@ -159,7 +167,7 @@ To ensure your OpenAPI schema definitions are always up-to-date, you can integra
           - id: generate-openapi-schemas
             name: Generate OpenAPI JSON Schemas
             description: Generates standalone JSON schemas from OpenAPI specifications.
-            entry: node generate-schemas.js ./openapi.json ./schemas
+            entry: openapi-langserver-schemas ./openapi.json ./schemas
             language: node
             pass_filenames: false
             always_run: true
@@ -192,24 +200,20 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v3
 
-      - name: Checkout generator
-        uses: actions/checkout@v3
-        with:
-          repository: nanna7077/openapi-jsonschema-generator
-          path: openapi-jsonschema-generator
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20"
+          registry-url: 'https://npm.pkg.github.com'
 
-      - name: Install generator dependencies
+      - name: Install dependencies
         run: npm install
-        working-directory: openapi-jsonschema-generator
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate JSON Schemas
         run: |
-          node openapi-jsonschema-generator/generate-schemas.js ./openapi.json ./schemas
+          npx @nanna7077/openapi-langserver-schemas ./openapi.json ./schemas
 
       - name: Upload generated schemas
         uses: actions/upload-artifact@v3
