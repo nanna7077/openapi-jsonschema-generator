@@ -47,6 +47,33 @@ async function main() {
       return `${method}${camelCasePath}`;
     };
 
+    const resolveRefs = (schema, api) => {
+      const resolvedSchema = JSON.parse(JSON.stringify(schema));
+
+      const resolve = (obj) => {
+        if (obj.$ref) {
+          const refPath = obj.$ref.split("/");
+          const refName = refPath[refPath.length - 1];
+          // eslint-disable-next-line no-prototype-builtins
+          if (api.components && api.components.schemas && api.components.schemas.hasOwnProperty(refName)) {
+            return resolve(api.components.schemas[refName]);
+          }
+          return obj;
+        }
+        if (obj.properties) {
+          for (const prop in obj.properties) {
+            obj.properties[prop] = resolve(obj.properties[prop]);
+          }
+        }
+        if (obj.items) {
+          obj.items = resolve(obj.items);
+        }
+        return obj;
+      };
+
+      return resolve(resolvedSchema);
+    };
+
     for (const pathKey in api.paths) {
       const pathItem = api.paths[pathKey];
 
@@ -86,7 +113,8 @@ async function main() {
           requestBody.content["application/json"] &&
           requestBody.content["application/json"].schema
         ) {
-          const requestSchema = requestBody.content["application/json"].schema;
+          let requestSchema = requestBody.content["application/json"].schema;
+          requestSchema = resolveRefs(requestSchema, api);
           const fullRequestSchema = {
             $schema: "https://json-schema.org/draft/2020-12/schema",
             ...requestSchema,
@@ -121,6 +149,7 @@ async function main() {
             ) {
               responseSchema =
                 responses[status].content["application/json"].schema;
+              responseSchema = resolveRefs(responseSchema, api);
               statusCode = status;
               break;
             }
@@ -157,7 +186,8 @@ async function main() {
     // 4. Component schema extraction
     if (api.components && api.components.schemas) {
       for (const schemaName in api.components.schemas) {
-        const componentSchema = api.components.schemas[schemaName];
+        let componentSchema = api.components.schemas[schemaName];
+        componentSchema = resolveRefs(componentSchema, api);
         const fullComponentSchema = {
           $schema: "https://json-schema.org/draft/2020-12/schema",
           ...componentSchema,
