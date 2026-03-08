@@ -1,6 +1,6 @@
 {
   "name": "@nanna7077/openapi-langserver-schemas",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Generates standalone JSON Schema files from an OpenAPI specification.",
   "main": "generate-schemas.js",
