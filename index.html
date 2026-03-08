@@ -226,7 +226,9 @@
             });
         </script>
 
-        <script>
+        <script type="module">
+            import { generate } from "./generate-schemas.js";
+
             const dropzoneFile = document.getElementById("dropzone-file");
             const fileNameDisplay = document.getElementById("fileNameDisplay");
             const errorMessage = document.getElementById("errorMessage");
@@ -264,107 +266,17 @@
                     }
 
                     if (openAPISpec) {
-                        await generateSchemas(openAPISpec);
+                        try {
+                            const schemas = await generate(openAPISpec);
+                            displaySchemas(schemas);
+                        } catch (error) {
+                            errorMessage.textContent = `Error generating schemas: ${error.message}`;
+                        }
                     }
                 };
 
                 reader.readAsText(file);
             });
-
-            async function generateSchemas(spec) {
-                const schemas = {};
-
-                const generateOperationId = (method, path) => {
-                    const simplifiedPath = path.replace(/\{(\w+)\}/g, "By$1");
-
-                    const camelCasePath = simplifiedPath
-                        .split("/")
-                        .filter((s) => s.length)
-                        .map((s, i) =>
-                            i === 0
-                                ? s
-                                : s.charAt(0).toUpperCase() + s.slice(1),
-                        )
-                        .join("");
-
-                    return `${method}${camelCasePath}`;
-                };
-
-                for (const pathKey in spec.paths) {
-                    const pathItem = spec.paths[pathKey];
-
-                    for (const method in pathItem) {
-                        if (
-                            ![
-                                "get",
-                                "post",
-                                "put",
-                                "delete",
-                                "patch",
-                                "head",
-                                "options",
-                                "trace",
-                            ].includes(method)
-                        )
-                            continue;
-
-                        const operation = pathItem[method];
-
-                        const tag = operation.tags?.[0] || "default";
-
-                        const operationId =
-                            operation.operationId ||
-                            generateOperationId(method, pathKey);
-
-                        const baseFileName = `${tag}.${operationId}`;
-
-                        const requestBody = operation.requestBody;
-
-                        if (
-                            requestBody?.content?.["application/json"]?.schema
-                        ) {
-                            schemas[`${baseFileName}.request.schema.json`] = {
-                                $schema:
-                                    "https://json-schema.org/draft/2020-12/schema",
-                                ...requestBody.content["application/json"]
-                                    .schema,
-                            };
-                        }
-
-                        const responses = operation.responses;
-
-                        if (responses) {
-                            let responseSchema = null;
-
-                            for (const status of ["200", "201", "default"]) {
-                                if (
-                                    responses[status]?.content?.[
-                                        "application/json"
-                                    ]?.schema
-                                ) {
-                                    responseSchema =
-                                        responses[status].content[
-                                            "application/json"
-                                        ].schema;
-                                    break;
-                                }
-                            }
-
-                            if (responseSchema) {
-                                schemas[
-                                    `${baseFileName}.response.schema.json`
-                                ] = {
-                                    $schema:
-                                        "https://json-schema.org/draft/2020-12/schema",
-                                    ...responseSchema,
-                                };
-                            }
-                        }
-                    }
-                }
-
-                displaySchemas(schemas);
-            }
 
             function displaySchemas(schemas) {
                 if (Object.keys(schemas).length === 0) {

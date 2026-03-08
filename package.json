@@ -1,6 +1,7 @@
 {
   "name": "openapi-jsonschema-generator",
   "version": "1.0.0",
+  "type": "module",
   "description": "Generates standalone JSON Schema files from an OpenAPI specification.",
   "main": "generate-schemas.js",
   "scripts": {
