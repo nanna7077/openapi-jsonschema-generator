@@ -153,6 +153,26 @@ async function main() {
         }
       }
     }
+
+    // 4. Component schema extraction
+    if (api.components && api.components.schemas) {
+      for (const schemaName in api.components.schemas) {
+        const componentSchema = api.components.schemas[schemaName];
+        const fullComponentSchema = {
+          $schema: "https://json-schema.org/draft/2020-12/schema",
+          ...componentSchema,
+        };
+        const componentFileName = `${schemaName}.schema.json`;
+        const componentOutputPath = path.join(outputDir, componentFileName);
+        await fs.writeFile(
+            componentOutputPath,
+            JSON.stringify(fullComponentSchema, null, 2),
+            "utf8",
+        );
+        console.log(`Generated component schema: ${componentOutputPath}`);
+      }
+    }
+    
     console.log("Schema generation complete.");
   } catch (error) {
     console.error("Error processing OpenAPI file:", error);
