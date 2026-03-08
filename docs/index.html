@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OpenAPI to JSON Schema Generator</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: [
+                                "Inter",
+                                "ui-sans-serif",
+                                "system-ui",
+                                "-apple-system",
+                                "BlinkMacSystemFont",
+                                '"Segoe UI"',
+                                "Roboto",
+                                '"Helvetica Neue"',
+                                "Arial",
+                                '"Noto Sans"',
+                                "sans-serif",
+                                '"Apple Color Emoji"',
+                                '"Segoe UI Emoji"',
+                                '"Segoe UI Symbol"',
+                                '"Noto Color Emoji"',
+                            ],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            /* Custom styles for better appearance */
+            body {
+                background-color: #f7f7f7;
+            }
+            .card {
+                background-color: #ffffff;
+                border-radius: 0.5rem;
+                box-shadow:
+                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .input-file-label {
+                cursor: pointer;
+                transition: background-color 0.2s ease-in-out;
+            }
+            .input-file-label:hover {
+                background-color: #e5e7eb;
+            }
+            .generated-schema {
+                background-color: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.375rem;
+                padding: 1rem;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+            .error-message {
+                color: #e53e3e;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased">
+        <div class="container mx-auto px-4 py-8">
+            <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">
+                OpenAPI to JSON Schema Generator
+            </h1>
+
+            <div class="card p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+                    Upload OpenAPI Specification
+                </h2>
+                <div class="flex items-center justify-center w-full">
+                    <label
+                        for="dropzone-file"
+                        class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
+                    >
+                        <div
+                            class="flex flex-col items-center justify-center pt-5 pb-6"
+                        >
+                            <svg
+                                class="w-10 h-10 mb-3 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903 5 5 0 111.75-0.467M17.5 4.25a7 7 0 11-9.484 6.524l1.662-1.663M18.5 7.8h.01M19.5 9h.01"
+                                ></path>
+                            </svg>
+                            <p
+                                class="mb-2 text-lg text-gray-500 dark:text-gray-400"
+                            >
+                                <span class="font-semibold"
+                                    >Click to upload</span
+                                >
+                                or drag and drop
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                JSON or YAML OpenAPI Specification (v3.0, v3.1)
+                            </p>
+                        </div>
+                        <input
+                            id="dropzone-file"
+                            type="file"
+                            class="hidden"
+                            accept=".json,.yaml,.yml"
+                        />
+                    </label>
+                </div>
+                <div
+                    id="fileNameDisplay"
+                    class="mt-4 text-sm text-gray-600 text-center"
+                ></div>
+                <div
+                    id="errorMessage"
+                    class="error-message text-center mt-4"
+                ></div>
+            </div>
+
+            <div class="card p-6 mb-8 hidden" id="outputContainer">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+                    Generated Schemas
+                </h2>
+                <div
+                    id="schemasOutput"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                    <!-- Schema cards will be appended here -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const dropzoneFile = document.getElementById("dropzone-file");
+            const fileNameDisplay = document.getElementById("fileNameDisplay");
+            const errorMessage = document.getElementById("errorMessage");
+            const outputContainer = document.getElementById("outputContainer");
+            const schemasOutput = document.getElementById("schemasOutput");
+
+            let openAPISpec = null;
+
+            dropzoneFile.addEventListener("change", async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    fileNameDisplay.textContent = "";
+                    errorMessage.textContent = "";
+                    outputContainer.classList.add("hidden");
+                    return;
+                }
+
+                fileNameDisplay.textContent = `Selected file: ${file.name}`;
+                errorMessage.textContent = "";
+                outputContainer.classList.add("hidden");
+                schemasOutput.innerHTML = ""; // Clear previous results
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const fileContent = e.target.result;
+                    try {
+                        // Attempt to parse as JSON first
+                        openAPISpec = JSON.parse(fileContent);
+                        console.log("Parsed as JSON");
+                    } catch (jsonError) {
+                        // If JSON parsing fails, try YAML (requires a YAML parser library)
+                        // For this browser-only example, we'll assume a simplified YAML or JSON input.
+                        // In a real-world scenario, you'd integrate a YAML parser like js-yaml.
+                        // For now, let's error out if it's not valid JSON.
+                        errorMessage.textContent =
+                            "Error: Invalid JSON format. Please provide a valid OpenAPI JSON file.";
+                        return;
+                    }
+
+                    if (openAPISpec) {
+                        await generateSchemas(openAPISpec, file.name);
+                    }
+                };
+                reader.onerror = () => {
+                    errorMessage.textContent = "Error reading file.";
+                    fileNameDisplay.textContent = "";
+                };
+                reader.readAsText(file);
+            });
+
+            async function generateSchemas(spec, specFileName) {
+                try {
+                    // --- Dereferencing Logic (simplified for browser) ---
+                    // In a real browser implementation, you'd need a library like
+                    // @apidevtools/swagger-parser that can handle dereferencing in the browser.
+                    // For this example, we'll assume the uploaded spec is already dereferenced or
+                    // that internal refs are simple enough to be handled conceptually.
+                    // A full dereferencing in the browser is complex due to network requests for external refs.
+                    // We'll proceed by directly using the parsed spec assuming internal refs are handled.
+
+                    const dereferencedSpec = spec; // Placeholder for actual dereferencing
+
+                    // --- Schema Extraction Logic ---
+                    const schemas = {};
+                    const outputDir = "schemas"; // Virtual directory name
+
+                    const generateOperationId = (method, path) => {
+                        const simplifiedPath = path.replace(
+                            /\{(\w+)\}/g,
+                            "By$1",
+                        );
+                        const camelCasePath = simplifiedPath
+                            .split("/")
+                            .filter((segment) => segment.length > 0)
+                            .map((segment, index) => {
+                                if (index === 0) return segment;
+                                return (
+                                    segment.charAt(0).toUpperCase() +
+                                    segment.slice(1)
+                                );
+                            })
+                            .join("");
+                        return `${method}${camelCasePath}`;
+                    };
+
+                    for (const pathKey in dereferencedSpec.paths) {
+                        const pathItem = dereferencedSpec.paths[pathKey];
+
+                        for (const method in pathItem) {
+                            if (
+                                ![
+                                    "get",
+                                    "post",
+                                    "put",
+                                    "delete",
+                                    "patch",
+                                    "head",
+                                    "options",
+                                    "trace",
+                                ].includes(method)
+                            ) {
+                                continue;
+                            }
+
+                            const operation = pathItem[method];
+                            const tag =
+                                operation.tags && operation.tags.length > 0
+                                    ? operation.tags[0]
+                                    : "default";
+                            const operationId =
+                                operation.operationId ||
+                                generateOperationId(method, pathKey);
+                            const baseFileName = `${tag}.${operationId}`;
+
+                            // Request Schema
+                            const requestBody = operation.requestBody;
+                            if (
+                                requestBody?.content?.["application/json"]
+                                    ?.schema
+                            ) {
+                                const requestSchema =
+                                    requestBody.content["application/json"]
+                                        .schema;
+                                schemas[`${baseFileName}.request.schema.json`] =
+                                    {
+                                        $schema:
+                                            "https://json-schema.org/draft/2020-12/schema",
+                                        ...requestSchema,
+                                    };
+                            }
+
+                            // Response Schema
+                            const responses = operation.responses;
+                            if (responses) {
+                                let responseSchema = null;
+                                let statusCode = null;
+                                for (const status of [
+                                    "200",
+                                    "201",
+                                    "default",
+                                ]) {
+                                    if (
+                                        responses[status]?.content?.[
+                                            "application/json"
+                                        ]?.schema
+                                    ) {
+                                        responseSchema =
+                                            responses[status].content[
+                                                "application/json"
+                                            ].schema;
+                                        statusCode = status;
+                                        break;
+                                    }
+                                }
+                                if (responseSchema) {
+                                    schemas[
+                                        `${baseFileName}.response.schema.json`
+                                    ] = {
+                                        $schema:
+                                            "https://json-schema.org/draft/2020-12/schema",
+                                        ...responseSchema,
+                                    };
+                                }
+                            }
+                        }
+                    }
+
+                    displaySchemas(schemas);
+                } catch (error) {
+                    console.error("Error generating schemas:", error);
+                    errorMessage.textContent = `Error processing OpenAPI spec: ${error.message}`;
+                }
+            }
+
+            function displaySchemas(schemas) {
+                if (Object.keys(schemas).length === 0) {
+                    errorMessage.textContent =
+                        "No schemas were generated. Ensure your OpenAPI spec has valid requestBody or response content with JSON schemas.";
+                    outputContainer.classList.add("hidden");
+                    return;
+                }
+
+                outputContainer.classList.remove("hidden");
+                schemasOutput.innerHTML = ""; // Clear previous results
+
+                Object.entries(schemas).forEach(([fileName, schemaContent]) => {
+                    const schemaCard = document.createElement("div");
+                    schemaCard.className = "card p-4";
+
+                    const fileNameHeader = document.createElement("h3");
+                    fileNameHeader.className =
+                        "text-lg font-semibold text-gray-700 mb-3 truncate";
+                    fileNameHeader.textContent = fileName;
+                    schemaCard.appendChild(fileNameHeader);
+
+                    const schemaPre = document.createElement("pre");
+                    schemaPre.className = "generated-schema text-sm";
+                    try {
+                        schemaPre.textContent = JSON.stringify(
+                            schemaContent,
+                            null,
+                            2,
+                        );
+                    } catch (e) {
+                        schemaPre.textContent = "Error stringifying schema.";
+                    }
+                    schemaCard.appendChild(schemaPre);
+
+                    // Add a download button for each schema
+                    const downloadButton = document.createElement("button");
+                    downloadButton.className =
+                        "mt-4 w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500";
+                    downloadButton.textContent = "Download Schema";
+                    downloadButton.addEventListener("click", () => {
+                        const blob = new Blob(
+                            [JSON.stringify(schemaContent, null, 2)],
+                            { type: "application/json" },
+                        );
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    });
+                    schemaCard.appendChild(downloadButton);
+
+                    schemasOutput.appendChild(schemaCard);
+                });
+            }
+
+            // Initial state setup
+            errorMessage.textContent = "";
+            outputContainer.classList.add("hidden");
+        </script>
+    </body>
+</html>
