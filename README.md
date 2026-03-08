@@ -49,12 +49,12 @@ This will process `openapi.json` and place the generated schema files into the `
 
 ### Server-Side Integration
 
-The core logic for generating schemas is modularized and exported as an `async function generate(spec)` from `generate-schemas.js`. This allows you to integrate the schema generation directly into your server-side Node.js applications, especially if you're looking to expose language server-compatible JSON schema endpoints dynamically.
+The core logic for generating schemas is modularized and exported as an `async function generateOpenApiSchemas(spec)` from this package. This allows you to integrate the schema generation directly into your server-side Node.js applications, especially if you're looking to expose language server-compatible JSON schema endpoints dynamically.
 
-You can import and use the `generate` function like this:
+You can import and use the `generateOpenApiSchemas` function like this:
 
 ```javascript
-import { generate } from './generate-schemas.js';
+import { generateOpenApiSchemas } from 'openapi-langserver-schemas';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express'; // Example: if serving Swagger UI
 
@@ -69,7 +69,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 // Expose a custom endpoint for schemas
 app.get('/schemas/:schemaName?', async (req, res) => {
   try {
-    const allSchemas = await generate(openApiSpec);
+    const allSchemas = await generateOpenApiSchemas(openApiSpec);
     const schemaName = req.params.schemaName;
 
     if (schemaName) {
