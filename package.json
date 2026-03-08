@@ -1,5 +1,5 @@
 {
-  "name": "openapi-langserver-schemas",
+  "name": "@nanna7077/openapi-langserver-schemas",
   "version": "1.0.0",
   "type": "module",
   "description": "Generates standalone JSON Schema files from an OpenAPI specification.",
@@ -29,6 +29,6 @@
     "@apidevtools/swagger-parser": "^10.1.0"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://npm.pkg.github.com/"
   }
 }
