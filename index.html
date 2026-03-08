@@ -211,10 +211,7 @@
                     Generated Schemas
                 </h2>
 
-                <div
-                    id="schemasOutput"
-                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                ></div>
+                <div id="schemasOutput"></div>
             </div>
         </div>
 
@@ -297,50 +294,45 @@
                 schemasOutput.innerHTML = "";
 
                 Object.entries(schemas).forEach(([fileName, schemaContent]) => {
-                    const card = document.createElement("div");
-                    card.className =
-                        "p-4 rounded-lg bg-gray-50 dark:bg-gray-700";
+                    const details = document.createElement("details");
+                    details.className = "p-4 rounded-lg bg-gray-50 dark:bg-gray-700 mb-4";
 
-                    const title = document.createElement("h3");
-                    title.className = "text-lg font-semibold mb-3";
-                    title.textContent = fileName;
+                    const summary = document.createElement("summary");
+                    summary.className = "text-lg font-semibold cursor-pointer";
+                    summary.textContent = fileName;
+
+                    const content = document.createElement("div");
+                    content.className = "mt-4";
 
                     const pre = document.createElement("pre");
-                    pre.className =
-                        "generated-schema text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700";
-
+                    pre.className = "generated-schema text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700";
                     pre.textContent = JSON.stringify(schemaContent, null, 2);
 
                     const btn = document.createElement("button");
-
-                    btn.className =
-                        "mt-4 w-full px-4 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700";
-
+                    btn.className = "mt-4 w-full px-4 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700";
                     btn.textContent = "Download Schema";
-
                     btn.onclick = () => {
                         const blob = new Blob(
                             [JSON.stringify(schemaContent, null, 2)],
                             { type: "application/json" },
                         );
                         const url = URL.createObjectURL(blob);
-
                         const a = document.createElement("a");
                         a.href = url;
                         a.download = fileName;
-
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-
                         URL.revokeObjectURL(url);
                     };
 
-                    card.appendChild(title);
-                    card.appendChild(pre);
-                    card.appendChild(btn);
+                    content.appendChild(pre);
+                    content.appendChild(btn);
 
-                    schemasOutput.appendChild(card);
+                    details.appendChild(summary);
+                    details.appendChild(content);
+
+                    schemasOutput.appendChild(details);
                 });
             }
         </script>
